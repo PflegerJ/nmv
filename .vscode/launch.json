@@ -10,7 +10,7 @@
             "name": "Debug rom with mesen",
             "romPath": "${workspaceFolder}/nmv.nes",
             "dbgPath": "${workspaceFolder}/nmv.dbg",
-            "program": "C:\\Users\\James\\nes\\mesen.exe",
+            "program": "/Applications/Mesen.app/Contents/MacOS/Mesen",
             "sourcePath": "${workspaceFolder}/",
             "stopOnEntry": true,
             "resetOnEntry": true
