@@ -16,14 +16,26 @@
 .segment "ZEROPAGE"
     pointerLo:  .res 1
     pointerHi:  .res 1
-    PPU_Buffer: .res 1
+    tempLo:     .res 1
+    tempHi:     .res 1
+
+    ; variables for the buffer
+    PPU_BufferOffset:   .res 1
 
 .segment "CODE"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; my goal is to basically rewrite all of this so i wrote it. and stumble through figuring out how to communicate with the ppu 
 ; so that i can try to make some stupid music video with background updates and bank swapping and all that crazy fun stuff
-vblankwait: 
+vblankwait:
+    bit $2002 ; PPU_STATUS
+    bpl vblankwait
     rts 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ok so I need a system, that will write to the ppu from a buffer
+;   so this means I need to what. choose buffer format.
+;   write to the buffer
+
 
 RESET:
     sei         ; ignore IRQs
@@ -37,30 +49,40 @@ RESET:
 
 
 
+    lda #$20
+    sta tempHi
+    lda #$00
+    sta tempLo
 
 clearnametables:
    
 
 Main:
     lda #$20
-    sta $2006
+    ;sta $2006
     lda #$00
-    sta $2006
+    ;sta $2006
 hi:
     lda #$01
-    sta $2007
+    ;sta $2007
     jmp hi
 
 VBLANK:
-    lda #$20
+    lda tempHi
     sta $2006
-    lda #$00
+    lda tempLo
     sta $2006
-hi:
-    lda #$00
-    sta $2007
-    inc 
-    jmp hi
+    
+    ldx #$00
+bye:
+    stx $2007
+    clc 
+    inc tempLo  
+    lda tempHi 
+    adc #$00
+    sta tempHi  
+    inx 
+    jmp bye
     rti 
 
 .segment "VECTORS"
