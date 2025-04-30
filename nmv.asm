@@ -20,6 +20,7 @@
     tempHi:     .res 1
     temp1:      .res 1
     flag1:      .res 1
+    p1:         .res 1
 
     ; variables for the buffer
     PPU_BufferOffset:   .res 1
@@ -91,10 +92,54 @@
 ; my goal is to basically rewrite all of this so i wrote it. and stumble through figuring out how to communicate with the ppu 
 ; so that i can try to make some stupid music video with background updates and bank swapping and all that crazy fun stuff
 vblankwait:
-    bit PPU_STATUS ; PPU_STATUS
+    bit PPU_STATUS 
     bpl vblankwait
     rts 
 
+TurnOnRendering:
+
+    rts 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;   Palette
+;       SAAPP   5 bit index into palette RAM
+;               Background/Sprite select
+;               Palette number from attributes
+;               Pixel value from tile pattern data
+;
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+WritePalette:
+
+    lda PPU_STATUS
+    lda #$3F
+    sta PPU_ADDR
+    lda #$00
+    sta PPU_ADDR
+    lda #$13
+    sta PPU_DATA
+    lda #$1C
+    sta PPU_DATA
+    lda #$2B
+    sta PPU_DATA
+    lda #$39
+    sta PPU_DATA
+    rts 
+
+WriteP1:
+    lda PPU_STATUS
+    lda #$3F
+    sta PPU_ADDR
+    lda #$00
+    sta PPU_ADDR
+    lda p1
+    sta PPU_DATA
+    clc 
+    adc #$01 
+    sta p1   
+    rts 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ok so I need a system, that will write to the ppu from a buffer
 ;   so this means I need to what. choose buffer format.
@@ -170,15 +215,51 @@ RESET:
     txs         ; stack stuff
     inx         ; x is 0 now
     ; above this comment is like. basic boot. I turn off apu cause fuck that. I set up stack somehow. 
+
+
+    jsr vblankwait
+
+
+
     ; lda #%10111110
     lda #$00
     sta PPU_CTRL    ; turning off vblank, setting nametable addresses, sprite size, i think i only care about vblank being on or off rn the rest is stuff i'll understand later
 
     jsr vblankwait
+
+    lda #$00
+    sta p1
+    sta temp1
+    sta PPU_MASK
+
+    jsr vblankwait
+
+    jsr WritePalette
+
+    jsr vblankwait
+
+    lda #$08 
+    sta PPU_MASK
+
+    jsr vblankwait
+
+    lda #$80
+    sta PPU_CTRL
+
+
 Forever:
     jmp Forever
    
 VBLANK:
+    inc temp1 
+    lda temp1
+    cmp #$0A
+    bne @skip
+    jsr WriteP1
+    lda #$00
+    sta temp1
+
+@skip:
     rti 
 
 .word TestData01
